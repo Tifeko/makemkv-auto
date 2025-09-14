@@ -139,7 +139,7 @@ if not os.path.exists(output_folder):
     os.makedirs(output_folder)
 
 
-#subprocess.run(["makemkvcon", f"--minlength={minlength_title}", "mkv", f"disc:{drive_number}", "all", output_folder])
+subprocess.run(["makemkvcon", f"--minlength={minlength_title}", "mkv", f"disc:{drive_number}", "all", output_folder])
 subprocess.run(["eject", f"/dev/sr{drive_number}"])
 if discord:
     webhook_url = DISCORD_WEBHOOK
