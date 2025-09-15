@@ -7,13 +7,15 @@ import json
 import time
 import pyudev
 import shutil
+import threading
+from pathlib import Path
 from tkinter import simpledialog
 from dotenv import load_dotenv
 
 load_dotenv()
 drive_number = 0
 output_folder_root = "output"
-minlength_title = 15
+minlength_title = 100
 TMDB_API_KEY = os.getenv("TMDB_API_KEY")
 release_year = None
 movie_name = None
@@ -21,6 +23,7 @@ movie_id = None
 discord = True
 DISCORD_WEBHOOK = os.getenv("DISCORD_WEBHOOK")
 DISCORD_USER_ID = os.getenv("DISCORD_USER_ID")
+handbrake_flatpak = True
 
 context = pyudev.Context()
 monitor = pyudev.Monitor.from_netlink(context)
@@ -58,6 +61,22 @@ def select_movie(event=None):
         movie_id = movie["id"]
 
         root.destroy()  # sluit venster
+
+def handbrake(folder):
+    os.rename(folder, f"{folder}_old")
+    os.makedirs(folder)
+    os.makedirs(f"{folder}/extras")
+    directory = Path(f"{folder}_old")
+    for file in directory.rglob("*"):  # rglob allows recursion
+        if file.is_file():
+            print(f"Transcoding: {file}")
+            if "/extras/" in str(file).replace("\\", "/"):
+                extras_file = Path(file)
+                subprocess.run(["flatpak", "run", "--command=HandBrakeCLI", "fr.handbrake.ghb", "-i", file, "-o", f"{folder}/extras/{extras_file.name}", "--preset-import-file", "preset.json"])
+            else:
+                file_path = Path(file)
+                subprocess.run(["flatpak", "run", "--command=HandBrakeCLI", "fr.handbrake.ghb", "-i", file, "-o", f"{folder}/{file_path.name}", "--preset-import-file", "preset.json"])
+
 while True:
     print("Waiting for Disc")
     for device in iter(monitor.poll, None):
@@ -99,7 +118,7 @@ while True:
         listbox = tk.Listbox(root, height=15, width=60)
         listbox.pack(pady=10)
         for movie in movies_data:
-            listbox.insert(tk.END, f"{movie["title"]} ({movie["year"]})")
+            listbox.insert(tk.END, f"{movie["title"]} ({movie["release_date"].split("-")[0]})")
         listbox.bind("<Double-1>", select_movie)
         listbox.bind("<Return>", select_movie)
         root.mainloop()
@@ -114,7 +133,7 @@ while True:
         listbox = tk.Listbox(root, height=15, width=60)
         listbox.pack(pady=10)
         for movie in movies_data:
-            listbox.insert(tk.END, f"{movie["title"]} ({movie["year"]})")
+            listbox.insert(tk.END, f"{movie["title"]} ({movie["release_date"].split("-")[0]})")
         listbox.bind("<Double-1>", select_movie)
         listbox.bind("<Return>", select_movie)
         root.mainloop()
@@ -136,7 +155,7 @@ while True:
             listbox = tk.Listbox(root, height=15, width=60)
             listbox.pack(pady=10)
             for movie in movies_data:
-                listbox.insert(tk.END, f"{movie["title"]} ({movie["year"]})")
+                listbox.insert(tk.END, f"{movie["title"]} ({movie["release_date"].split("-")[0]})")
             listbox.bind("<Double-1>", select_movie)
             listbox.bind("<Return>", select_movie)
             root.mainloop()
@@ -193,5 +212,10 @@ while True:
 
         # Send the POST request
         response = requests.post(webhook_url, json=data)
-
-
+    if handbrake_flatpak:
+        handbrake_folder = f"{output_folder_root}/{output_folder}"
+        threading.Thread(
+            target=handbrake,
+            args=(handbrake_folder,),
+            daemon=True
+        ).start()
