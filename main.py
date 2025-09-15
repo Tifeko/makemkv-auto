@@ -221,7 +221,7 @@ while True:
         os.makedirs(f"{output_folder_root}/temp_folder")
 
 
-    #subprocess.run(["makemkvcon", f"--minlength={minlength_title}", "mkv", f"disc:{drive_number}", "all", f"{output_folder_root}/temp_folder"])
+    subprocess.run(["makemkvcon", f"--minlength={minlength_title}", "mkv", f"disc:{drive_number}", "all", f"{output_folder_root}/temp_folder"])
     item_path = f"{output_folder_root}/temp_folder"
     new_dir_name = output_folder
     new_dir_path = os.path.join(output_folder_root, new_dir_name)
