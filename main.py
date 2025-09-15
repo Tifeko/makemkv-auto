@@ -103,6 +103,16 @@ def handbrake(folder):
                 file_path = Path(file)
                 subprocess.run(["flatpak", "run", "--command=HandBrakeCLI", "fr.handbrake.ghb", "-i", file, "-o", f"{output_folder_root}/{movie}/extras/{file_path.name}", "--preset-import-file", "preset.json"])
         shutil.remove(folder)
+        if discord:
+            webhook_url = DISCORD_WEBHOOK
+
+            # The message payload
+            data = {
+                "content": f"<@{DISCORD_USER_ID}> handbrake is klaar"  # This is the message that will be sent
+            }
+
+            # Send the POST request
+            response = requests.post(webhook_url, json=data)
     else:
         os.rename(folder, f"{folder}_old")
         os.makedirs(folder)
@@ -118,6 +128,16 @@ def handbrake(folder):
                 else:
                     file_path = Path(file)
                     subprocess.run(["flatpak", "run", "--command=HandBrakeCLI", "fr.handbrake.ghb", "-i", file, "-o", f"{folder}/{file_path.name}", "--preset-import-file", "preset.json"])
+        if discord:
+            webhook_url = DISCORD_WEBHOOK
+
+            # The message payload
+            data = {
+                "content": f"<@{DISCORD_USER_ID}> handbrake is klaar"  # This is the message that will be sent
+            }
+
+            # Send the POST request
+            response = requests.post(webhook_url, json=data)
 
 while True:
     print("Waiting for Disc")
@@ -253,6 +273,7 @@ while True:
             messagebox.showerror("Error", f"Failed to process {item}: {str(e)}")
 
     subprocess.run(["eject", f"/dev/sr{drive_number}"])
+    time.sleep(10)
     if discord:
         webhook_url = DISCORD_WEBHOOK
 
