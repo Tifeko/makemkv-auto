@@ -102,7 +102,7 @@ def handbrake(folder):
                 print(f"Transcoding: {file}")
                 file_path = Path(file)
                 subprocess.run(["flatpak", "run", "--command=HandBrakeCLI", "fr.handbrake.ghb", "-i", file, "-o", f"{output_folder_root}/{movie}/extras/{file_path.name}", "--preset-import-file", "preset.json"])
-        shutil.remove(folder)
+        shutil.rmtree(folder)
         if discord:
             webhook_url = DISCORD_WEBHOOK
 
