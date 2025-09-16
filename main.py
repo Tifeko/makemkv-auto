@@ -173,6 +173,7 @@ while True:
     input("Press any key to continue...")
 
     disc_name = get_disc_label(f"/dev/sr{drive_number}")
+    disc_name = disc_name.replace("_", " ")
 
     print(f"Disc Inserted: {disc_name}")
 
