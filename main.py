@@ -140,12 +140,7 @@ def handbrake(folder):
             response = requests.post(webhook_url, json=data)
 
 while True:
-    print("Waiting for Disc")
-    for device in iter(monitor.poll, None):
-        if 'sr' in device.device_node:
-            # Only trigger if media is present
-            if device.get('ID_CDROM_MEDIA') == '1':
-                break
+    input("Press any key to continue...")
 
     disc_name = get_disc_label(f"/dev/sr{drive_number}")
 
