@@ -9,7 +9,7 @@ import pyudev
 import shutil
 import threading
 from pathlib import Path
-from tkinter import simpledialog
+from tkinter import simpledialog, ttk
 from dotenv import load_dotenv
 from os import listdir
 from os.path import isfile, join
@@ -31,6 +31,8 @@ discord = True
 DISCORD_WEBHOOK = os.getenv("DISCORD_WEBHOOK")
 DISCORD_USER_ID = os.getenv("DISCORD_USER_ID")
 handbrake_flatpak = True
+progress_var = None
+progress_file = "progress.txt"
 
 context = pyudev.Context()
 monitor = pyudev.Monitor.from_netlink(context)
@@ -138,6 +140,34 @@ def handbrake(folder):
 
             # Send the POST request
             response = requests.post(webhook_url, json=data)
+def read_progress():
+    """Read last progress percentage from progress.txt"""
+    if not os.path.exists(progress_file):
+        return 0
+    
+    last_value = 0
+    with open(progress_file, "r") as f:
+        for line in f:
+            if line.startswith("PRGV:"):
+                parts = line.strip().split(":")[1].split(",")
+                cur = int(parts[0])
+                maxv = int(parts[2])
+                last_value = int(cur / maxv * 100)
+    return last_value
+
+def update_progress():
+    global progress_var
+    """Update progress bar in the Tkinter window"""
+    if process.poll() is None:  # still running
+        val = read_progress()
+        progress_var.set(val)
+        root.after(500, update_progress)
+    else:
+        # proces is klaar
+        progress_var.set(100)
+        label.config(text="Done!")
+        root.after(2000, root.destroy)  # sluit na 2 sec
+
 
 while True:
     input("Press any key to continue...")
@@ -235,8 +265,30 @@ while True:
     if not os.path.exists(f"{output_folder_root}/temp_folder"):
         os.makedirs(f"{output_folder_root}/temp_folder")
 
+    root = tk.Tk()
+    root.title("MakeMKV Progress")
 
-    subprocess.run(["makemkvcon", f"--minlength={minlength_title}", "mkv", f"disc:{drive_number}", "all", f"{output_folder_root}/temp_folder"])
+    progress_var = tk.IntVar()
+    progress_bar = ttk.Progressbar(root, maximum=100, variable=progress_var, length=400, mode="determinate")
+    progress_bar.pack(pady=20)
+
+    label = tk.Label(root, text="Processing...")
+    label.pack()
+
+    process = subprocess.Popen([
+    "makemkvcon",
+    f"--minlength={minlength_title}",
+    "-r",
+    "--progress=progress.txt",
+    "mkv",
+    f"disc:{drive_number}",
+    "all",
+    f"{output_folder_root}/temp_folder"
+    ])
+
+    update_progress()
+    root.mainloop()
+
     item_path = f"{output_folder_root}/temp_folder"
     new_dir_name = output_folder
     new_dir_path = os.path.join(output_folder_root, new_dir_name)
